@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-  emailjs.init('tX7No8UK-SbOSlEQV');
+  emailjs.init('4EOkO_p3ey7Am8t1d');
 
   const form = document.getElementById('feedbackForm');
 
