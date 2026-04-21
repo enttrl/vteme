@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-  emailjs.init('ТВОЙ_PUBLIC_KEY');
+  emailjs.init('tX7No8UK-SbOSlEQV');
 
   const form = document.getElementById('feedbackForm');
 
@@ -61,8 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       await emailjs.send(
-        'ТВОЙ_SERVICE_ID',
-        'ТВОЙ_TEMPLATE_ID',
+        'service_15j1wj6',
+        'template_6gm6k24',
         data
       );
 
