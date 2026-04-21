@@ -40,3 +40,41 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 });
+
+document.addEventListener('DOMContentLoaded', () => {
+  emailjs.init('ТВОЙ_PUBLIC_KEY');
+
+  const form = document.getElementById('feedbackForm');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const btn = form.querySelector('.feedback-form__submit');
+    btn.disabled = true;
+    btn.textContent = 'Отправка...';
+
+    const data = {
+      name: form.name.value,
+      phone: form.phone.value,
+      email: form.email.value
+    };
+
+    try {
+      await emailjs.send(
+        'ТВОЙ_SERVICE_ID',
+        'ТВОЙ_TEMPLATE_ID',
+        data
+      );
+
+      alert('Заявка отправлена!');
+      form.reset();
+
+    } catch (error) {
+      console.error(error);
+      alert('Ошибка отправки');
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Перезвоните мне';
+  });
+});
