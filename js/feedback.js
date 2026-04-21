@@ -1,6 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
   const phoneInput = document.getElementById('phoneInput');
-  const feedbackForm = document.getElementById('feedbackForm');
 
   if (phoneInput) {
     phoneInput.addEventListener('input', handlePhoneMask);
@@ -39,19 +38,5 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target.value === '+7') {
       e.target.value = '';
     }
-  }
-
-  if (feedbackForm) {
-    feedbackForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const formData = new FormData(feedbackForm);
-      const data = Object.fromEntries(formData.entries());
-
-      console.log('Данные формы:', data);
-
-      alert('Форма отправлена. Здесь позже подключится отправка на почту.');
-      feedbackForm.reset();
-    });
   }
 });
