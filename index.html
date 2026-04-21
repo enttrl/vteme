@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Фитнес-центр "В ТЕМЕ"</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+  <script src="js/feedback.js"></script>
+</head>
+<body>
+  <header class="header">
+      <div class="header__inner">
+        <a class="header__logo-link" href="/" aria-label="На главную">
+          <img
+            class="header__logo"
+            src="assets/img/logo-vteme.svg"
+            alt="ВТЕМЕ"
+          >
+        </a>
+
+        <nav class="header__nav nav" aria-label="Основная навигация">
+          <ul class="nav__list">
+            <li class="nav__item"><a class="nav__link" href="#about">О нас</a></li>
+            <li class="nav__item"><a class="nav__link" href="#memberships">Абонементы</a></li>
+            <li class="nav__item"><a class="nav__link" href="#schedule">Расписание</a></li>
+            <li class="nav__item"><a class="nav__link" href="#services">Услуги</a></li>
+            <li class="nav__item"><a class="nav__link" href="#trainers">Тренеры</a></li>
+            <li class="nav__item"><a class="nav__link" href="#promotions">Акции</a></li>
+          </ul>
+        </nav>
+
+        <a class="header__login login-button" href="/login">
+          <span class="login-button__text">Войти</span>
+          <span class="login-button__icon" aria-hidden="true">
+            <img
+              class="login-button__img"
+              src="assets/img/arrow-up-right.svg"
+              alt=""
+            >
+          </span>
+        </a>
+      </div>
+    </header>
+  <section class="hero-section">
+    <div class="hero-section__decor" aria-hidden="true">
+      <img src="assets/img/poloska.svg" alt="">
+    </div>
+    <div class="hero-section__image" aria-hidden="true">
+      <img src="assets/img/gant.png" alt="">
+    </div>
+
+    <section class="hero">
+      <div class="hero__inner">
+        <div class="hero__content">
+          <h1 class="hero__title">
+            В ТЕМЕ — МЕСТО,<br>
+            ГДЕ КОМФОРТНО НАЧИНАТЬ
+          </h1>
+
+          <p class="hero__description">
+            Комфортные тренировки, понятные программы и поддержка на каждом этапе
+          </p>
+
+          <a href="#trial" class="hero__button trial-button">
+            <span class="trial-button__text">Пробное занятие</span>
+            <span class="trial-button__icon" aria-hidden="true">
+              <img src="assets/img/arrow-up-right.svg" alt="">
+            </span>
+          </a>
+
+          <div class="hero__stats">
+            <div class="hero__stat">
+              <div class="hero__stat-number">55</div>
+              <div class="hero__stat-text">тренажеров</div>
+            </div>
+
+            <div class="hero__stat">
+              <div class="hero__stat-number">34</div>
+              <div class="hero__stat-text">направления</div>
+            </div>
+
+            <div class="hero__stat">
+              <div class="hero__stat-number">12</div>
+              <div class="hero__stat-text">тренеров</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </section>
+  <section class="features">
+  <div class="features__inner">
+    <h2 class="features__title">ПОЧЕМУ МЫ?</h2>
+
+    <div class="features__grid">
+      <article class="feature-card feature-card--large">
+        <img
+          class="feature-card__bg"
+          src="assets/img/Gs5SY.jpg"
+          alt="Гантели на зеленом коврике"
+        >
+        <div class="feature-card__overlay"></div>
+
+        <div class="feature-card__content feature-card__content--bottom">
+          <h3 class="feature-card__title feature-card__title--light">
+            Тренеры<br>с сертификатами
+          </h3>
+
+          <p class="feature-card__text feature-card__text--light">
+            С вами работают только опытные тренеры<br>
+            с профильным образованием.
+          </p>
+        </div>
+      </article>
+
+      <div class="features__right">
+        <article class="feature-card feature-card--small feature-card--schedule">
+          <img
+            class="feature-card__bg1"
+            src="assets/img/гантеля.png"
+            alt=""
+          >
+
+          <div class="feature-card__content feature-card__content--top">
+            <h3 class="feature-card__title">
+              Удобное<br>расписание
+            </h3>
+
+            <p class="feature-card__text">
+              Вы легко подберёте<br>
+              тренировку под свой ритм<br>
+              жизни.
+            </p>
+          </div>
+        </article>
+
+        <article class="feature-card feature-card--bar">
+          <div class="feature-card__decor" aria-hidden="true">
+            <img src="assets/img/element.svg" alt="">
+          </div>
+
+          <div class="feature-card__content">
+            <h3 class="feature-card__title">ПП Бар</h3>
+
+            <p class="feature-card__text">
+              Полезные напитки<br>
+              и перекусы помогут<br>
+              восстановить силы<br>
+              и поддержать результат.
+            </p>
+          </div>
+        </article>
+
+        <article class="feature-card feature-card--wide">
+          <a href="#account" class="feature-card__circle-link" aria-label="Перейти в личный кабинет">
+            <img src="assets/img/arrow-up-right.svg" alt="">
+          </a>
+
+          <div class="feature-card__content feature-card__content--bottom-dark">
+            <h3 class="feature-card__title">Личный кабинет</h3>
+
+            <p class="feature-card__text">
+              В личном кабинете удобно записываться на тренировки,
+              следить за абонементом и управлять своими
+              занятиями онлайн.
+            </p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="directions-ticker" aria-label="Направления тренировок">
+  <div class="directions-ticker__track">
+    <div class="directions-ticker__group">
+      <span class="directions-ticker__item directions-ticker__item--accent">Пилатес</span>
+      <span class="directions-ticker__item">Силовые тренировки</span>
+      <span class="directions-ticker__item directions-ticker__item--accent">TRX</span>
+      <span class="directions-ticker__item">Растяжка</span>
+      <span class="directions-ticker__item directions-ticker__item--accent">Функциональные тренировки</span>
+      <span class="directions-ticker__item">HIIT</span>
+      <span class="directions-ticker__item directions-ticker__item--accent">Full Body</span>
+      <span class="directions-ticker__item">Йога</span>
+      <span class="directions-ticker__item directions-ticker__item--accent">Пилатес</span>
+      <span class="directions-ticker__item">Силовые тренировки</span>
+      <span class="directions-ticker__item directions-ticker__item--accent">TRX</span>
+      <span class="directions-ticker__item">HIIT</span>
+    </div>
+
+    <div class="directions-ticker__group" aria-hidden="true">
+      <span class="directions-ticker__item directions-ticker__item--accent">Пилатес</span>
+      <span class="directions-ticker__item">Силовые тренировки</span>
+      <span class="directions-ticker__item directions-ticker__item--accent">TRX</span>
+      <span class="directions-ticker__item">Растяжка</span>
+      <span class="directions-ticker__item directions-ticker__item--accent">Функциональные тренировки</span>
+      <span class="directions-ticker__item">HIIT</span>
+      <span class="directions-ticker__item directions-ticker__item--accent">Full Body</span>
+      <span class="directions-ticker__item">Йога</span>
+      <span class="directions-ticker__item directions-ticker__item--accent">Пилатес</span>
+      <span class="directions-ticker__item">Силовые тренировки</span>
+      <span class="directions-ticker__item directions-ticker__item--accent">TRX</span>
+      <span class="directions-ticker__item">HIIT</span>
+    </div>
+  </div>
+</section>
+<section class="memberships">
+  <div class="memberships__inner">
+    <h2 class="memberships__title">АБОНЕМЕНТЫ</h2>
+
+    <div class="memberships__grid">
+      <article class="membership membership--intro">
+        <p class="membership__intro-text">
+          Мы сделали несколько форматов абонементов, <br>
+          чтобы каждый мог выбрать комфортный режим
+          тренировок
+        </p>
+      </article>
+
+      <article class="membership membership--dark">
+        <h3 class="membership__name">Тариф «День»</h3>
+        <p class="membership__time">Время входа 11:00 - 15:00</p>
+
+        <div class="membership__bottom">
+          <p class="membership__price">
+            <span class="membership__price-value">2500₽</span>
+            <span class="membership__price-period">/1 месяц</span>
+          </p>
+
+          <a class="membership__button membership__button--light" href="#">
+            <span class="membership__button-text">Подробнее</span>
+            <span class="membership__button-icon" aria-hidden="true">
+              <img src="assets/img/arrow-up-right.svg" alt="">
+            </span>
+          </a>
+        </div>
+      </article>
+
+      <article class="membership membership--light membership--hit">
+        <div class="membership__badge">ХИТ</div>
+
+        <h3 class="membership__name">Тариф «Полный день»</h3>
+        <p class="membership__time">Время входа 08:00 - 16:00</p>
+
+        <div class="membership__bottom">
+          <p class="membership__price">
+            <span class="membership__price-value">3100₽</span>
+            <span class="membership__price-period">/1 месяц</span>
+          </p>
+
+          <a class="membership__button membership__button--dark" href="#">
+            <span class="membership__button-text">Подробнее</span>
+            <span class="membership__button-icon " aria-hidden="true">
+              <img src="assets/img/arrow-up-right.svg" alt="" class="arrow-black">
+            </span>
+          </a>
+        </div>
+      </article>
+
+      <article class="membership membership--dark">
+        <h3 class="membership__name">Тариф «Безлимит»</h3>
+        <p class="membership__time">Без ограничений по времени</p>
+
+        <div class="membership__bottom">
+          <p class="membership__price">
+            <span class="membership__price-value">4000₽</span>
+            <span class="membership__price-period">/1 месяц</span>
+          </p>
+
+          <a class="membership__button membership__button--light" href="#">
+            <span class="membership__button-text">Подробнее</span>
+            <span class="membership__button-icon " aria-hidden="true" >
+              <img src="assets/img/arrow-up-right.svg" alt="">
+            </span>
+          </a>
+        </div>
+      </article>
+
+      <article class="membership membership--dark">
+        <h3 class="membership__name">Тариф «VIP»</h3>
+        <p class="membership__time">Посещения без ограничений</p>
+        <p class="membership__time">30 минут солярий</p>
+
+        <div class="membership__bottom">
+          <p class="membership__price">
+            <span class="membership__price-value">5100₽</span>
+            <span class="membership__price-period">/1 месяц</span>
+          </p>
+
+          <a class="membership__button membership__button--light" href="#">
+            <span class="membership__button-text">Подробнее</span>
+            <span class="membership__button-icon" aria-hidden="true">
+              <img src="assets/img/arrow-up-right.svg" alt="">
+            </span>
+          </a>
+        </div>
+      </article>
+
+      <article class="membership membership--contact">
+        <p class="membership__contact-text">
+          Чтобы узнать подробнее <br>
+          об абонементах перейдите
+          на страницу с тарифами,
+          либо свяжитесь с нами
+        </p>
+
+        <a class="membership__contact-button" href="#contacts">
+          <span class="membership__contact-button-text">Связаться с нами</span>
+          <span class="membership__contact-button-icon" aria-hidden="true">
+            <img src="assets/img/arrow-up-right.svg" alt="">
+          </span>
+        </a>
+      </article>
+    </div>
+  </div>
+</section>
+<section class="team" id="trainers">
+  <div class="team__shell">
+    <div class="team__header">
+      <h2 class="team__title">НАША КОМАНДА</h2>
+
+      <div class="team__controls">
+        <button class="team__control team__control--prev" type="button" aria-label="Предыдущие тренеры">
+          <img src="assets/img/arrow.svg" alt="">
+        </button>
+
+        <button class="team__control team__control--next" type="button" aria-label="Следующие тренеры">
+          <img src="assets/img/arrow.svg" alt="">
+        </button>
+      </div>
+    </div>
+
+    <div class="team__slider">
+      <div class="team__track">
+        <!-- экран 1 -->
+        <div class="team__slide">
+          <article class="trainer-card">
+            <div class="trainer-card__photo-wrap">
+              <img class="trainer-card__photo" src="assets/img/index/trainer-1.jpg" alt="Екатерина Логинова">
+              <div class="trainer-card__tag">Йога</div>
+            </div>
+            <h3 class="trainer-card__name">Екатерина Логинова</h3>
+            <p class="trainer-card__role">Инструктор групповых программ</p>
+          </article>
+
+          <article class="trainer-card">
+            <div class="trainer-card__photo-wrap">
+              <img class="trainer-card__photo" src="assets/img/index/trainer-2.jpg" alt="Самарин Артем">
+              <div class="trainer-card__tag">Силовые тренировки</div>
+            </div>
+            <h3 class="trainer-card__name">Самарин Артем</h3>
+            <p class="trainer-card__role">Инструктор тренажерного зала</p>
+          </article>
+
+          <article class="trainer-card">
+            <div class="trainer-card__photo-wrap">
+              <img class="trainer-card__photo" src="assets/img/index/trainer-3.jpg" alt="Лучина Елена">
+              <div class="trainer-card__tag">Пилатес</div>
+            </div>
+            <h3 class="trainer-card__name">Лучина Елена</h3>
+            <p class="trainer-card__role">Инструктор групповых программ</p>
+          </article>
+
+          <article class="trainer-card">
+            <div class="trainer-card__photo-wrap">
+              <img class="trainer-card__photo" src="assets/img/index/trainer-4.jpg" alt="Карягин Михаил">
+              <div class="trainer-card__tag">TRX</div>
+            </div>
+            <h3 class="trainer-card__name">Карягин Михаил</h3>
+            <p class="trainer-card__role">Инструктор тренажерного зала</p>
+          </article>
+        </div>
+
+
+        <div class="team__slide">
+          <article class="trainer-card">
+            <div class="trainer-card__photo-wrap">
+              <img class="trainer-card__photo" src="assets/img/index/trainer-5.jpg" alt="Анна Миронова">
+              <div class="trainer-card__tag">Стретчинг</div>
+            </div>
+            <h3 class="trainer-card__name">Анна Миронова</h3>
+            <p class="trainer-card__role">Инструктор групповых программ</p>
+          </article>
+
+          <article class="trainer-card">
+            <div class="trainer-card__photo-wrap">
+              <img class="trainer-card__photo" src="assets/img/index/trainer-6.jpg" alt="Илья Власов">
+              <div class="trainer-card__tag">CrossFit</div>
+            </div>
+            <h3 class="trainer-card__name">Илья Власов</h3>
+            <p class="trainer-card__role">Инструктор тренажерного зала</p>
+          </article>
+
+          <article class="trainer-card">
+            <div class="trainer-card__photo-wrap">
+              <img class="trainer-card__photo" src="assets/img/index/trainer-7.jpg" alt="Мария Соколова">
+              <div class="trainer-card__tag">Dance Fit</div>
+            </div>
+            <h3 class="trainer-card__name">Мария Соколова</h3>
+            <p class="trainer-card__role">Инструктор групповых программ</p>
+          </article>
+
+          <article class="trainer-card">
+            <div class="trainer-card__photo-wrap">
+              <img class="trainer-card__photo" src="assets/img/index/trainer-8.jpg" alt="Алексей Громов">
+              <div class="trainer-card__tag">Функциональные</div>
+            </div>
+            <h3 class="trainer-card__name">Алексей Громов</h3>
+            <p class="trainer-card__role">Инструктор тренажерного зала</p>
+          </article>
+        </div>
+
+
+        <div class="team__slide">
+          <article class="trainer-card">
+            <div class="trainer-card__photo-wrap">
+              <img class="trainer-card__photo" src="assets/img/index/trainer-9.jpg" alt="Полина Жданова">
+              <div class="trainer-card__tag">Йога</div>
+            </div>
+            <h3 class="trainer-card__name">Полина Жданова</h3>
+            <p class="trainer-card__role">Инструктор групповых программ</p>
+          </article>
+
+          <article class="trainer-card">
+            <div class="trainer-card__photo-wrap">
+              <img class="trainer-card__photo" src="assets/img/index/trainer-10.jpg" alt="Денис Орлов">
+              <div class="trainer-card__tag">HIIT</div>
+            </div>
+            <h3 class="trainer-card__name">Денис Орлов</h3>
+            <p class="trainer-card__role">Инструктор тренажерного зала</p>
+          </article>
+
+          <article class="trainer-card">
+            <div class="trainer-card__photo-wrap">
+              <img class="trainer-card__photo" src="assets/img/index/trainer-11.jpg" alt="Виктория Белова">
+              <div class="trainer-card__tag">Пилатес</div>
+            </div>
+            <h3 class="trainer-card__name">Виктория Белова</h3>
+            <p class="trainer-card__role">Инструктор групповых программ</p>
+          </article>
+
+          <article class="trainer-card">
+            <div class="trainer-card__photo-wrap">
+              <img class="trainer-card__photo" src="assets/img/index/trainer-12.jpg" alt="Кирилл Лебедев">
+              <div class="trainer-card__tag">TRX</div>
+            </div>
+            <h3 class="trainer-card__name">Кирилл Лебедев</h3>
+            <p class="trainer-card__role">Инструктор тренажерного зала</p>
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="team__footer">
+      <p class="team__footer-text">Узнайте подробнее о наших тренерах</p>
+
+      <a class="team__button" href="#">
+        <span class="team__button-text">Подробнее</span>
+        <span class="team__button-icon" aria-hidden="true">
+          <img src="assets/img/arrow-up-right.svg" alt="">
+        </span>
+      </a>
+    </div>
+  </div>
+</section>
+<section class="feedback" id="contact">
+  <div class="feedback__inner">
+    <div class="feedback__head">
+      <h2 class="feedback__title">
+        Купите абонемент в
+        <a href="pages/account.html" class="feedback__title-link">
+          <span>личном кабинете</span>
+          <span class="feedback__title-link-icon" aria-hidden="true">
+            <img src="assets/img/arrow-up-right.svg" alt="">
+          </span>
+        </a>
+        <br>
+        или запишитесь на консультацию
+      </h2>
+    </div>
+
+    <div class="feedback__content">
+      <div class="feedback__form-card">
+        <h3 class="feedback__form-title">Свяжитесь с нами</h3>
+
+        <p class="feedback__form-text">
+          Если у Вас есть вопросы или возникли какие-то проблемы
+          впишите свои данные и мы Вам перезвоним
+        </p>
+
+        <form class="feedback-form" id="feedbackForm" action="send.php" method="POST">
+          <label class="feedback-form__group">
+            <span class="feedback-form__label">Имя</span>
+            <input
+              class="feedback-form__input"
+              type="text"
+              name="name"
+              placeholder="Ваше имя"
+              required
+            >
+          </label>
+
+          <label class="feedback-form__group">
+            <span class="feedback-form__label">Телефон</span>
+            <input
+              class="feedback-form__input"
+              type="tel"
+              name="phone"
+              placeholder="+7 (999) 999 - 99 - 99"
+              id="phoneInput"
+              required
+            >
+          </label>
+
+          <label class="feedback-form__group">
+            <span class="feedback-form__label">Email</span>
+            <input
+              class="feedback-form__input"
+              type="email"
+              name="email"
+              placeholder="example@mail.ru"
+              required
+            >
+          </label>
+
+          <label class="feedback-form__checkbox">
+            <input
+              class="feedback-form__checkbox-input"
+              type="checkbox"
+              name="agreement"
+              required
+            >
+            <span class="feedback-form__checkbox-box"></span>
+            <span class="feedback-form__checkbox-text">
+              Согласие на обработку персональных данных
+            </span>
+          </label>
+
+          <button class="feedback-form__submit" type="submit">
+            Перезвоните мне
+          </button>
+        </form>
+      </div>
+
+      <div class="feedback__info">
+        <article class="contact-card contact-card--accent">
+          <div class="contact-card__icon">
+            <img src="assets/img/index/map.svg" alt="">
+          </div>
+          <div class="contact-card__body">
+            <h3 class="contact-card__title">Адрес</h3>
+            <p class="contact-card__text">Кисловодск, Первомайский просп., 27, этаж 3</p>
+          </div>
+        </article>
+
+        <article class="contact-card">
+          <div class="contact-card__icon">
+            <img src="assets/img/index/phone.svg" alt="">
+          </div>
+          <div class="contact-card__body">
+            <h3 class="contact-card__title">Телефон</h3>
+            <p class="contact-card__text">Вы можете связаться с нами <br> по телефону +7 (928) 822-05-55</p>
+          </div>
+        </article>
+
+        <article class="contact-card">
+          <div class="contact-card__icon">
+            <img src="assets/img/index/mail.svg" alt="">
+          </div>
+          <div class="contact-card__body">
+            <h3 class="contact-card__title">Email</h3>
+            <p class="contact-card__text">В течение рабочего времени Вы можете <br> писать нам на почту vteme@mail.ru</p>
+          </div>
+        </article>
+
+        <article class="contact-card">
+          <div class="contact-card__icon">
+            <img src="assets/img/index/clock.svg" alt="">
+          </div>
+          <div class="contact-card__body">
+            <h3 class="contact-card__title">Рабочие часы</h3>
+            <p class="contact-card__text">Пн — Пт: 08:00-22:00<br>Сб — Вс: 09:00-21:00</p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </div>
+</section>
+</body>
+<script>
+  window.addEventListener("scroll", () => {
+    document.body.classList.toggle("scrolled", window.scrollY > 10);
+  });
+</script>
+<script>
+  const teamTrack = document.querySelector('.team__track');
+  const teamSlides = document.querySelectorAll('.team__slide');
+  const teamPrev = document.querySelector('.team__control--prev');
+  const teamNext = document.querySelector('.team__control--next');
+
+  let currentTeamSlide = 0;
+  const totalTeamSlides = teamSlides.length;
+
+  function updateTeamSlider() {
+    teamTrack.style.transform = `translateX(-${currentTeamSlide * 100}%)`;
+  }
+
+  teamNext.addEventListener('click', () => {
+    currentTeamSlide = (currentTeamSlide + 1) % totalTeamSlides;
+    updateTeamSlider();
+  });
+
+  teamPrev.addEventListener('click', () => {
+    currentTeamSlide = (currentTeamSlide - 1 + totalTeamSlides) % totalTeamSlides;
+    updateTeamSlider();
+  });
+</script>
+</html>
