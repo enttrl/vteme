@@ -1,0 +1,350 @@
+.hero-section__decor {
+  position: absolute;
+  right: clamp(220px, -10vw, -60px);
+  width: clamp(500px, 62vw, 1100px);
+  z-index: 1;
+  pointer-events: none;
+  user-select: none;
+}
+@media (max-width: 1920px) {
+  .hero-section__decor {
+    right: clamp(-90px, -10vw, -60px);
+    width: clamp(500px, 62vw, 1100px);
+  }
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 100;
+  border-bottom: 3px solid rgb(255, 255, 255);
+}
+
+.header__inner {
+  width: 100%;
+  max-width: 1600px;
+  min-height: 78px;
+  margin: 0 auto;
+  padding: 0 0px 0 0px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 39px;
+}
+
+.header__logo-link {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.header__logo {
+  display: block;
+  width: 200px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.header__nav {
+  flex: 1 1 auto;
+  display: flex;
+  justify-content: center;
+}
+
+.nav__list {
+  display: flex;
+  align-items: center;
+  gap: 58px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.nav__item {
+  line-height: 1;
+}
+
+.nav__link {
+  display: inline-block;
+  font-family: "Inter", Arial, sans-serif;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1;
+  color: #000000;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.nav__link:hover,
+.nav__link:focus-visible {
+  color: #f58220;
+}
+
+.header__login {
+  flex-shrink: 0;
+}
+
+.login-button {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.login-button__img {
+  display: block;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.login-button__text {
+  width: 136px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #000000;
+  border-radius: 60px;
+  font-family: "Inter", Arial, sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1;
+  color: #ffffff;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.login-button__icon {
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #000000;
+  border-radius: 50%;
+  color: #ffffff;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.login-button:hover .login-button__text,
+.login-button:hover .login-button__icon,
+.login-button:focus-visible .login-button__text,
+.login-button:focus-visible .login-button__icon {
+  background-color: #f58220;
+  color: #ffffff;
+}
+
+.login-button:hover .login-button__img {
+  filter: brightness(0) invert(1); /* делает белой */
+}
+.header__burger {
+  display: none;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: none;
+  background: #000000;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.header__burger span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  background: #ffffff;
+  border-radius: 2px;
+}
+
+.mobile-menu {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: #ffffff;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+  border-bottom: 3px solid #ffffff;
+  
+}
+
+.mobile-menu.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.mobile-menu__inner {
+  width: 100%;
+  min-height: 100vh;
+  padding: 24px 24px 20px;
+  display: flex;
+  flex-direction: column;
+  
+}
+
+.mobile-menu__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mobile-menu__logo {
+  width: 258px;
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.mobile-menu__close {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  border: none;
+  border-radius: 50%;
+  background: #ff8a34;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.mobile-menu__close span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 22px;
+  height: 2px;
+  background: #ffffff;
+  border-radius: 2px;
+}
+
+.mobile-menu__close span:first-child {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.mobile-menu__close span:last-child {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.mobile-menu__nav {
+  margin-top: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mobile-menu__link {
+  font-family: "Inter", Arial, sans-serif;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.15;
+  color: #000000;
+  text-decoration: none;
+}
+
+.mobile-menu__login {
+  margin-top: 64px;
+  width: fit-content;
+}
+
+.mobile-menu__contacts {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mobile-menu__contact {
+  font-family: "Inter", Arial, sans-serif;
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1.2;
+  color: #111111;
+  text-decoration: none;
+}
+
+.mobile-menu__bottom {
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px solid #8e8e8e;
+}
+
+.mobile-menu__copyright {
+  margin: 0;
+  font-family: "Inter", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.2;
+  color: #111111;
+}
+
+.mobile-menu__policy {
+  display: inline-block;
+  margin-top: 10px;
+  font-family: "Inter", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.2;
+  color: #4b4b4b;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+body.menu-open {
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .header {
+    border-bottom: none;
+  }
+
+  .header__inner {
+    min-height: 52px;
+    padding-top: 24px;
+    padding-bottom: 24px;
+  }
+
+  .header__logo {
+    width: 172px;
+    height: auto;
+  }
+
+  .header__nav,
+  .header__login {
+    display: none;
+  }
+
+  .header__burger {
+    display: inline-flex;
+  }
+  .login-button__text {
+  width: 360px;
+  height: 48px;
+  font-size: 20px;
+}
+.login-button__icon {
+  width: 48px;
+  height: 48px;
+}
+.mobile-menu__inner {
+  padding: 16px 16px 16px
+}
+.mobile-menu__login {
+  width: 100%;
+}
+.mobile-menu__contact {
+  font-size: 20px;
+}
+}
+
