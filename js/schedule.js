@@ -5,6 +5,7 @@ const scheduleState = {
   selectedClassId: null,
   bookingCounts: new Map(),
   userBookingIds: new Set(),
+  currentUser: null,
 };
 
 const daysEl = document.querySelector('[data-days]');
@@ -419,7 +420,13 @@ function showNoMembershipModal() {
 }
 
 async function bookClass(classId) {
-  const { data: { user } } = await supabaseClient.auth.getUser();
+  let user = scheduleState.currentUser;
+
+  if (!user) {
+    const { data } = await supabaseClient.auth.getSession();
+    user = data?.session?.user || null;
+    scheduleState.currentUser = user;
+  }
 
   if (!user) {
     if (window.openAuthModalGlobal) {
@@ -474,6 +481,13 @@ async function loadClasses() {
   const weekStart = formatDateForDB(weekDates[0]);
   const weekEnd = formatDateForDB(weekDates[weekDates.length - 1]);
 
+  const cacheKey = `vteme:schedule:${weekStart}:${weekEnd}`;
+  const cached = readSessionCache(cacheKey, 5 * 60 * 1000);
+
+  if (cached?.classes?.length) {
+    applyLoadedClasses(cached.classes, weekDates);
+  }
+
   const { data, error } = await supabaseClient
     .from('classes')
     .select('*')
@@ -484,27 +498,45 @@ async function loadClasses() {
 
   if (error) {
     console.error(error);
-    listEl.innerHTML = '<p class="schedule-empty">Не удалось загрузить расписание. Проверь подключение Supabase.</p>';
+    if (!scheduleState.allClasses.length) {
+      listEl.innerHTML = '<p class="schedule-empty">Не удалось загрузить расписание. Проверь подключение Supabase.</p>';
+    }
     return;
   }
 
-  scheduleState.allClasses = data || [];
+  writeSessionCache(cacheKey, { classes: data || [] });
+  applyLoadedClasses(data || [], weekDates);
+
+  const classIds = scheduleState.allClasses.map((item) => item.id);
+
+  supabaseClient.auth.getSession().then(({ data: sessionData }) => {
+    const user = sessionData?.session?.user || null;
+    scheduleState.currentUser = user;
+
+    return Promise.all([
+      loadUserBookings(user),
+      loadBookingCounts(classIds),
+    ]).then(async () => {
+      const params = new URLSearchParams(window.location.search);
+      const classFromUrl = Number(params.get('class'));
+
+      if (classFromUrl && user) {
+        await bookClass(classFromUrl);
+        window.history.replaceState({}, '', 'schedule.html');
+        return;
+      }
+
+      renderList();
+      renderDetail();
+    });
+  }).catch((authError) => {
+    console.warn('Не удалось быстро получить пользователя:', authError);
+  });
+}
+
+function applyLoadedClasses(classes, weekDates) {
+  scheduleState.allClasses = classes || [];
   scheduleState.filteredClasses = [...scheduleState.allClasses];
-
-  const { data: { user } } = await supabaseClient.auth.getUser();
-  await Promise.all([
-    loadUserBookings(user),
-    loadBookingCounts(scheduleState.allClasses.map((item) => item.id)),
-  ]);
-
-  const params = new URLSearchParams(window.location.search);
-  const classFromUrl = Number(params.get('class'));
-
-  if (classFromUrl && user) {
-    await bookClass(classFromUrl);
-    window.history.replaceState({}, '', 'schedule.html');
-    return;
-  }
 
   fillCustomDropdowns();
 
@@ -513,7 +545,7 @@ async function loadClasses() {
     return scheduleState.filteredClasses.some((item) => item.date === dbDate);
   });
 
-  if (selectedDayWithClasses) {
+  if (!scheduleState.selectedDate && selectedDayWithClasses) {
     scheduleState.selectedDate = formatDateForDB(selectedDayWithClasses);
   }
 
@@ -522,6 +554,26 @@ async function loadClasses() {
   renderDays();
   renderList();
   renderDetail();
+}
+
+function readSessionCache(key, maxAgeMs) {
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed?.time || Date.now() - parsed.time > maxAgeMs) return null;
+    return parsed.value;
+  } catch {
+    return null;
+  }
+}
+
+function writeSessionCache(key, value) {
+  try {
+    sessionStorage.setItem(key, JSON.stringify({ time: Date.now(), value }));
+  } catch {
+    // sessionStorage может быть недоступен в приватном режиме — это не критично
+  }
 }
 
 filtersToggle?.addEventListener('click', () => {
