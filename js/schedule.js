@@ -5,7 +5,7 @@ const scheduleState = {
   selectedClassId: null,
   bookingCounts: new Map(),
   userBookingIds: new Set(),
-  currentUser: null,
+  pendingBookingIds: new Set(),
 };
 
 const daysEl = document.querySelector('[data-days]');
@@ -16,6 +16,63 @@ const filtersToggle = document.querySelector('[data-filters-toggle]');
 const filtersToggleText = document.querySelector('[data-filters-toggle-text]');
 
 const WEEK_DAYS = ['ВС', 'ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ'];
+
+const BOOKING_CACHE_KEYS = [
+  'vkr_account_schedule_cache',
+  'vkr_bookings_cache',
+  'vkr_recent_booking',
+  'vkr_membership_cache'
+];
+
+function withTimeout(promise, timeoutMs = 12000, message = 'Превышено время ожидания. Проверьте интернет и попробуйте ещё раз.') {
+  let timerId;
+  const timeout = new Promise((_, reject) => {
+    timerId = setTimeout(() => reject(new Error(message)), timeoutMs);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timerId));
+}
+
+async function getCurrentUserFast() {
+  const { data } = await supabaseClient.auth.getSession();
+  if (data?.session?.user) return data.session.user;
+
+  const response = await withTimeout(supabaseClient.auth.getUser(), 7000, 'Не удалось проверить вход. Попробуйте обновить страницу.');
+  return response?.data?.user || null;
+}
+
+function setBookingButtonsLoading(classId, isLoading) {
+  document.querySelectorAll(`[data-book-class="${classId}"]`).forEach((button) => {
+    button.disabled = isLoading;
+    button.dataset.originalText = button.dataset.originalText || button.textContent;
+    button.textContent = isLoading ? 'Записываем...' : (button.dataset.originalText || 'Записаться');
+  });
+}
+
+function invalidateBookingCaches() {
+  BOOKING_CACHE_KEYS.forEach((key) => {
+    if (key !== 'vkr_recent_booking') localStorage.removeItem(key);
+  });
+  localStorage.setItem('vkr_bookings_updated_at', String(Date.now()));
+}
+
+function saveRecentBooking(classItem) {
+  if (!classItem) return;
+
+  localStorage.setItem('vkr_recent_booking', JSON.stringify({
+    savedAt: Date.now(),
+    classItem: {
+      id: classItem.id,
+      title: classItem.title,
+      trainer_name: classItem.trainer_name,
+      date: classItem.date,
+      start_time: classItem.start_time,
+      end_time: classItem.end_time,
+      capacity: classItem.capacity
+    }
+  }));
+}
+
 
 function showToast(message = 'Готово') {
   const toast = document.createElement('div');
@@ -271,9 +328,10 @@ function renderList() {
   listEl.innerHTML = classes.map((item) => {
     const isActive = item.id === scheduleState.selectedClassId;
     const alreadyBooked = scheduleState.userBookingIds.has(item.id);
+    const pending = scheduleState.pendingBookingIds.has(item.id);
     const full = isClassFull(item);
-    const buttonText = alreadyBooked ? 'Вы записаны' : full ? 'Мест нет' : 'Записаться';
-    const disabled = alreadyBooked || full;
+    const buttonText = pending ? 'Записываем...' : alreadyBooked ? 'Вы записаны' : full ? 'Мест нет' : 'Записаться';
+    const disabled = pending || alreadyBooked || full;
 
     return `
       <article class="schedule-card${isActive ? ' is-active' : ''}" tabindex="0" role="button" data-class-id="${item.id}">
@@ -303,9 +361,10 @@ function renderDetail() {
   }
 
   const alreadyBooked = scheduleState.userBookingIds.has(item.id);
+  const pending = scheduleState.pendingBookingIds.has(item.id);
   const full = isClassFull(item);
-  const buttonText = alreadyBooked ? 'Вы записаны' : full ? 'Мест нет' : 'Записаться';
-  const disabled = alreadyBooked || full;
+  const buttonText = pending ? 'Записываем...' : alreadyBooked ? 'Вы записаны' : full ? 'Мест нет' : 'Записаться';
+  const disabled = pending || alreadyBooked || full;
 
   detailEl.innerHTML = `
     <article class="schedule-detail__card">
@@ -370,12 +429,25 @@ function getMembershipMonths(duration) {
 }
 
 async function hasActiveMembership(userId) {
-  const { data, error } = await supabaseClient
-    .from('membership_orders')
-    .select('created_at, membership_duration, status')
-    .eq('user_id', userId)
-    .eq('status', 'Успешно')
-    .order('created_at', { ascending: false });
+  const cacheKey = `vkr_membership_cache_${userId}`;
+
+  try {
+    const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+    if (cached && Date.now() - cached.savedAt < 5 * 60 * 1000) {
+      return Boolean(cached.hasMembership);
+    }
+  } catch (_) {}
+
+  const { data, error } = await withTimeout(
+    supabaseClient
+      .from('membership_orders')
+      .select('created_at, membership_duration, status')
+      .eq('user_id', userId)
+      .eq('status', 'Успешно')
+      .order('created_at', { ascending: false }),
+    10000,
+    'Не удалось проверить абонемент. Попробуйте ещё раз.'
+  );
 
   if (error) {
     console.error('Ошибка проверки абонемента:', error);
@@ -383,8 +455,7 @@ async function hasActiveMembership(userId) {
   }
 
   const now = new Date();
-
-  return (data || []).some((order) => {
+  const hasMembership = (data || []).some((order) => {
     const months = getMembershipMonths(order.membership_duration);
     if (!months) return false;
 
@@ -393,6 +464,9 @@ async function hasActiveMembership(userId) {
 
     return endDate >= now;
   });
+
+  localStorage.setItem(cacheKey, JSON.stringify({ savedAt: Date.now(), hasMembership }));
+  return hasMembership;
 }
 
 function showNoMembershipModal() {
@@ -420,30 +494,7 @@ function showNoMembershipModal() {
 }
 
 async function bookClass(classId) {
-  let user = scheduleState.currentUser;
-
-  if (!user) {
-    const { data } = await supabaseClient.auth.getSession();
-    user = data?.session?.user || null;
-    scheduleState.currentUser = user;
-  }
-
-  if (!user) {
-    if (window.openAuthModalGlobal) {
-      window.openAuthModalGlobal();
-    } else {
-      alert('Войдите в аккаунт, чтобы записаться на тренировку');
-    }
-    return;
-  }
-
-  // ✅ ПРОВЕРКА АБОНЕМЕНТА
-  const hasMembership = await hasActiveMembership(user.id);
-
-  if (!hasMembership) {
-    showNoMembershipModal();
-    return;
-  }
+  if (scheduleState.pendingBookingIds.has(classId) || scheduleState.userBookingIds.has(classId)) return;
 
   const classItem = scheduleState.allClasses.find((item) => item.id === classId);
   if (!classItem) return;
@@ -453,25 +504,63 @@ async function bookClass(classId) {
     return;
   }
 
-  const { error } = await supabaseClient
-    .from('class_bookings')
-    .insert({ user_id: user.id, class_id: classId });
-
-  if (error) {
-    if (error.code === '23505') {
-      alert('Вы уже записаны на это занятие');
-    } else {
-      console.error(error);
-      alert('Не удалось записаться. Попробуйте позже');
-    }
-    return;
-  }
-
-  scheduleState.userBookingIds.add(classId);
-  scheduleState.bookingCounts.set(classId, getClassBookedCount(classId) + 1);
-  showToast('Вы записаны на занятие');
+  scheduleState.pendingBookingIds.add(classId);
+  setBookingButtonsLoading(classId, true);
   renderList();
   renderDetail();
+
+  try {
+    const user = await getCurrentUserFast();
+
+    if (!user) {
+      if (window.openAuthModalGlobal) {
+        window.openAuthModalGlobal();
+      } else {
+        alert('Войдите в аккаунт, чтобы записаться на тренировку');
+      }
+      return;
+    }
+
+    const hasMembership = await hasActiveMembership(user.id);
+
+    if (!hasMembership) {
+      showNoMembershipModal();
+      return;
+    }
+
+    const { error } = await withTimeout(
+      supabaseClient
+        .from('class_bookings')
+        .insert({ user_id: user.id, class_id: classId }),
+      12000,
+      'Запись занимает слишком много времени. Проверьте интернет и попробуйте ещё раз.'
+    );
+
+    if (error) {
+      if (error.code === '23505') {
+        scheduleState.userBookingIds.add(classId);
+        showToast('Вы уже записаны на это занятие');
+      } else {
+        console.error(error);
+        alert('Не удалось записаться. Попробуйте позже');
+      }
+      return;
+    }
+
+    scheduleState.userBookingIds.add(classId);
+    scheduleState.bookingCounts.set(classId, getClassBookedCount(classId) + 1);
+    saveRecentBooking(classItem);
+    invalidateBookingCaches();
+    showToast('Вы записаны на занятие');
+  } catch (error) {
+    console.error('Ошибка записи на занятие:', error);
+    alert(error.message || 'Не удалось записаться. Попробуйте позже');
+  } finally {
+    scheduleState.pendingBookingIds.delete(classId);
+    setBookingButtonsLoading(classId, false);
+    renderList();
+    renderDetail();
+  }
 }
 
 async function loadClasses() {
@@ -480,13 +569,6 @@ async function loadClasses() {
   const weekDates = getWeekDates();
   const weekStart = formatDateForDB(weekDates[0]);
   const weekEnd = formatDateForDB(weekDates[weekDates.length - 1]);
-
-  const cacheKey = `vteme:schedule:${weekStart}:${weekEnd}`;
-  const cached = readSessionCache(cacheKey, 5 * 60 * 1000);
-
-  if (cached?.classes?.length) {
-    applyLoadedClasses(cached.classes, weekDates);
-  }
 
   const { data, error } = await supabaseClient
     .from('classes')
@@ -498,44 +580,11 @@ async function loadClasses() {
 
   if (error) {
     console.error(error);
-    if (!scheduleState.allClasses.length) {
-      listEl.innerHTML = '<p class="schedule-empty">Не удалось загрузить расписание. Проверь подключение Supabase.</p>';
-    }
+    listEl.innerHTML = '<p class="schedule-empty">Не удалось загрузить расписание. Проверь подключение Supabase.</p>';
     return;
   }
 
-  writeSessionCache(cacheKey, { classes: data || [] });
-  applyLoadedClasses(data || [], weekDates);
-
-  const classIds = scheduleState.allClasses.map((item) => item.id);
-
-  supabaseClient.auth.getSession().then(({ data: sessionData }) => {
-    const user = sessionData?.session?.user || null;
-    scheduleState.currentUser = user;
-
-    return Promise.all([
-      loadUserBookings(user),
-      loadBookingCounts(classIds),
-    ]).then(async () => {
-      const params = new URLSearchParams(window.location.search);
-      const classFromUrl = Number(params.get('class'));
-
-      if (classFromUrl && user) {
-        await bookClass(classFromUrl);
-        window.history.replaceState({}, '', 'schedule.html');
-        return;
-      }
-
-      renderList();
-      renderDetail();
-    });
-  }).catch((authError) => {
-    console.warn('Не удалось быстро получить пользователя:', authError);
-  });
-}
-
-function applyLoadedClasses(classes, weekDates) {
-  scheduleState.allClasses = classes || [];
+  scheduleState.allClasses = data || [];
   scheduleState.filteredClasses = [...scheduleState.allClasses];
 
   fillCustomDropdowns();
@@ -545,7 +594,7 @@ function applyLoadedClasses(classes, weekDates) {
     return scheduleState.filteredClasses.some((item) => item.date === dbDate);
   });
 
-  if (!scheduleState.selectedDate && selectedDayWithClasses) {
+  if (selectedDayWithClasses) {
     scheduleState.selectedDate = formatDateForDB(selectedDayWithClasses);
   }
 
@@ -554,25 +603,26 @@ function applyLoadedClasses(classes, weekDates) {
   renderDays();
   renderList();
   renderDetail();
-}
 
-function readSessionCache(key, maxAgeMs) {
   try {
-    const raw = sessionStorage.getItem(key);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (!parsed?.time || Date.now() - parsed.time > maxAgeMs) return null;
-    return parsed.value;
-  } catch {
-    return null;
-  }
-}
+    const user = await getCurrentUserFast();
+    await Promise.all([
+      loadUserBookings(user),
+      loadBookingCounts(scheduleState.allClasses.map((item) => item.id)),
+    ]);
 
-function writeSessionCache(key, value) {
-  try {
-    sessionStorage.setItem(key, JSON.stringify({ time: Date.now(), value }));
-  } catch {
-    // sessionStorage может быть недоступен в приватном режиме — это не критично
+    renderList();
+    renderDetail();
+
+    const params = new URLSearchParams(window.location.search);
+    const classFromUrl = Number(params.get('class'));
+
+    if (classFromUrl && user) {
+      await bookClass(classFromUrl);
+      window.history.replaceState({}, '', 'schedule.html');
+    }
+  } catch (error) {
+    console.warn('Расписание показано, но данные пользователя/мест пока не загрузились:', error);
   }
 }
 

@@ -10,36 +10,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  initEditProfileButton();
-  initLogout(supabaseClient);
-  initFormMasks();
-
   const user = await getAuthorizedUser(supabaseClient);
 
   if (!user) {
     window.location.href = 'index.html';
     return;
   }
-
+  await initAvatar(supabaseClient, user);
   initAvatarUpload(supabaseClient, user);
+  await initAccountProfile(supabaseClient, user);
+  await initSettingsForm(supabaseClient, user);
+  await initMembershipInfo(supabaseClient, user);
 
-  const cachedProfile = getCachedProfile(user.id);
-  if (cachedProfile) {
-    initAvatar(supabaseClient, user, cachedProfile);
-    initAccountProfile(supabaseClient, user, cachedProfile);
-    initSettingsForm(supabaseClient, user, cachedProfile);
-  }
-
-  const profilePromise = loadAccountProfile(supabaseClient, user);
-
-  profilePromise.then((profile) => {
-    initAvatar(supabaseClient, user, profile);
-    initAccountProfile(supabaseClient, user, profile);
-    initSettingsForm(supabaseClient, user, profile);
-  });
-
-  initMembershipInfo(supabaseClient, user);
-  initSchedule(supabaseClient, user);
+  initEditProfileButton();
+  initLogout(supabaseClient);
+  await initSchedule(supabaseClient, user);
+  initFormMasks();
 });
 function showConfirmModal(message) {
   return new Promise((resolve) => {
@@ -127,54 +113,6 @@ function createSupabaseClient() {
 
   return window.supabaseClient;
 }
-
-function getProfileCacheKey(userId) {
-  return `vteme:profile:${userId}`;
-}
-
-function getCachedProfile(userId) {
-  try {
-    const raw = sessionStorage.getItem(getProfileCacheKey(userId));
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (!parsed?.time || Date.now() - parsed.time > 5 * 60 * 1000) return null;
-    return parsed.profile;
-  } catch {
-    return null;
-  }
-}
-
-function setCachedProfile(userId, profile) {
-  try {
-    sessionStorage.setItem(getProfileCacheKey(userId), JSON.stringify({
-      time: Date.now(),
-      profile
-    }));
-  } catch {
-    // не критично
-  }
-}
-
-async function loadAccountProfile(supabaseClient, user) {
-  try {
-    const { data: profile, error } = await supabaseClient
-      .from('profiles')
-      .select('full_name, last_name, birth_date, gender, avatar_url')
-      .eq('id', user.id)
-      .maybeSingle();
-
-    if (error) {
-      console.error('Ошибка загрузки профиля:', error.message);
-      return getCachedProfile(user.id) || null;
-    }
-
-    setCachedProfile(user.id, profile || {});
-    return profile || {};
-  } catch (error) {
-    console.error('Ошибка loadAccountProfile:', error);
-    return getCachedProfile(user.id) || null;
-  }
-}
 function initAvatarUpload(supabaseClient, user) {
   const avatarBlock = document.getElementById('avatarBlock');
   const avatarInput = document.getElementById('avatarInput');
@@ -219,14 +157,19 @@ function initAvatarUpload(supabaseClient, user) {
     avatarImage.src = avatarUrl;
   });
 }
-async function initAvatar(supabaseClient, user, profile = null) {
+async function initAvatar(supabaseClient, user) {
   const avatarImage = document.getElementById('avatarImage');
-  if (!avatarImage) return;
 
-  if (profile?.avatar_url) {
-    avatarImage.src = profile.avatar_url;
+  const { data } = await supabaseClient
+    .from('profiles')
+    .select('avatar_url')
+    .eq('id', user.id)
+    .single();
+
+  if (data?.avatar_url) {
+    avatarImage.src = data.avatar_url;
   } else {
-    avatarImage.src = '../assets/img/user-defolt.svg';
+    avatarImage.src = '../assets/img/user-defolt.svg'; // дефолт
   }
 }
 async function initMembershipInfo(supabaseClient, user) {
@@ -360,19 +303,33 @@ function initTabs() {
   switchTab(activeTab);
 }
 
-async function initAccountProfile(supabaseClient, user, profile = null) {
+async function initAccountProfile(supabaseClient, user) {
   const greetingNameEl = document.getElementById('accountUserName');
   const cardNameEl = document.getElementById('accountCardUserName');
 
-  const fullName = profile?.full_name?.trim() || user.user_metadata?.full_name || user.email || 'Пользователь';
-  const firstName = fullName.split(' ')[0] || fullName;
+  try {
+    const { data: profile, error } = await supabaseClient
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .maybeSingle();
 
-  if (greetingNameEl) {
-    greetingNameEl.textContent = firstName;
-  }
+    if (error) {
+      console.error('Ошибка загрузки профиля:', error.message);
+    }
 
-  if (cardNameEl) {
-    cardNameEl.textContent = firstName;
+    const fullName = profile?.full_name?.trim() || user.user_metadata?.full_name || user.email || 'Пользователь';
+    const firstName = fullName.split(' ')[0] || fullName;
+
+    if (greetingNameEl) {
+      greetingNameEl.textContent = firstName;
+    }
+
+    if (cardNameEl) {
+      cardNameEl.textContent = firstName;
+    }
+  } catch (error) {
+    console.error('Ошибка инициализации профиля:', error);
   }
 }
 
@@ -425,11 +382,7 @@ async function initSchedule(supabaseClient, user) {
   let activeDateKey = startDate;
   let trainingsByDate = {};
 
-  const trainingsCacheKey = `vteme:account-trainings:${user.id}:${startDate}:${endDate}`;
-  const cachedTrainings = readAccountSessionCache(trainingsCacheKey, 5 * 60 * 1000);
-  if (cachedTrainings) {
-    trainingsByDate = cachedTrainings;
-  }
+  applyRecentBookingFromStorage();
 
   if (scheduleNativeInput) {
     scheduleNativeInput.value = activeDateKey;
@@ -461,11 +414,50 @@ async function initSchedule(supabaseClient, user) {
   }
 
   renderAll();
+  refreshUserTrainings();
 
-  loadUserTrainings().then(() => {
-    writeAccountSessionCache(trainingsCacheKey, trainingsByDate);
-    renderAll();
+  window.addEventListener('pageshow', refreshUserTrainings);
+  window.addEventListener('focus', refreshUserTrainings);
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'vkr_bookings_updated_at' || event.key === 'vkr_recent_booking') {
+      applyRecentBookingFromStorage();
+      renderAll();
+      refreshUserTrainings();
+    }
   });
+
+  async function refreshUserTrainings() {
+    await loadUserTrainings();
+    renderAll();
+  }
+
+  function applyRecentBookingFromStorage() {
+    try {
+      const recent = JSON.parse(localStorage.getItem('vkr_recent_booking') || 'null');
+      if (!recent?.classItem || Date.now() - recent.savedAt > 30 * 60 * 1000) return;
+
+      const classItem = recent.classItem;
+      if (!classItem.date || classItem.date < startDate || classItem.date > endDate) return;
+
+      const dateKey = classItem.date;
+      const current = trainingsByDate[dateKey] || [];
+
+      if (current.some((training) => String(training.classId) === String(classItem.id))) return;
+
+      trainingsByDate[dateKey] = [
+        ...current,
+        {
+          bookingId: `pending-${classItem.id}`,
+          classId: classItem.id,
+          title: classItem.title,
+          slots: `${classItem.capacity} мест`,
+          time: `${formatTime(classItem.start_time)}–${formatTime(classItem.end_time)}`,
+          trainer: classItem.trainer_name,
+          isPending: true
+        }
+      ];
+    } catch (_) {}
+  }
 
   async function loadUserTrainings() {
     const { data, error } = await supabaseClient
@@ -507,12 +499,15 @@ async function initSchedule(supabaseClient, user) {
 
       trainingsByDate[dateKey].push({
         bookingId: booking.id,
+        classId: classItem.id,
         title: classItem.title,
         slots: `${classItem.capacity} мест`,
         time: `${formatTime(classItem.start_time)}–${formatTime(classItem.end_time)}`,
         trainer: classItem.trainer_name
       });
     });
+
+    localStorage.removeItem('vkr_recent_booking');
   }
 
   function renderAll() {
@@ -571,10 +566,10 @@ async function initSchedule(supabaseClient, user) {
     <p class="training-card__meta">${escapeHtml(training.time)}</p>
     <p class="training-card__meta">Тренер: ${escapeHtml(training.trainer)}</p>
 
-    <button class="training-card__cancel"
+    ${training.isPending ? '<p class="training-card__meta">Запись сохраняется...</p>' : `<button class="training-card__cancel"
             data-booking-id="${training.bookingId}">
       Отменить запись
-    </button>
+    </button>`}
   </article>
 `).join('');
   }
@@ -601,31 +596,13 @@ async function initSchedule(supabaseClient, user) {
 
     // ❌ было alert
     showToast('Запись отменена');
+    localStorage.setItem('vkr_bookings_updated_at', String(Date.now()));
+    localStorage.removeItem('vkr_recent_booking');
 
     await loadUserTrainings();
     renderAll();
   });
 }
-function readAccountSessionCache(key, maxAgeMs) {
-  try {
-    const raw = sessionStorage.getItem(key);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (!parsed?.time || Date.now() - parsed.time > maxAgeMs) return null;
-    return parsed.value;
-  } catch {
-    return null;
-  }
-}
-
-function writeAccountSessionCache(key, value) {
-  try {
-    sessionStorage.setItem(key, JSON.stringify({ time: Date.now(), value }));
-  } catch {
-    // не критично
-  }
-}
-
 function formatTime(time) {
   return String(time || '').slice(0, 5);
 }
@@ -724,46 +701,60 @@ function normalizeDateValue(value) {
   return `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`;
 }
 
-async function initSettingsForm(supabaseClient, user, profile = null) {
+async function initSettingsForm(supabaseClient, user) {
   const form = document.getElementById('settingsForm');
-  if (!form || form.dataset.initialized === 'true') return;
-  form.dataset.initialized = 'true';
+  if (!form) return;
 
   const firstNameInput = document.getElementById('firstName');
   const lastNameInput = document.getElementById('lastName');
   const emailInput = document.getElementById('email');
   const birthDateInput = document.getElementById('birthDate');
 
-  if (firstNameInput) {
-    firstNameInput.value = profile?.full_name ?? '';
-  }
+  try {
+    const { data: profile, error } = await supabaseClient
+      .from('profiles')
+      .select('full_name, last_name, birth_date, gender')
+      .eq('id', user.id)
+      .maybeSingle();
 
-  if (lastNameInput) {
-    lastNameInput.value = profile?.last_name ?? '';
-  }
-
-  if (emailInput) {
-    emailInput.value = user.email ?? '';
-  }
-
-  if (birthDateInput && profile?.birth_date) {
-    birthDateInput.value = formatDateForInput(profile.birth_date);
-  }
-
-  if (profile?.gender) {
-    const genderRadio = form.querySelector(
-      `input[name="gender"][value="${profile.gender}"]`
-    );
-
-    if (genderRadio) {
-      genderRadio.checked = true;
+    if (error) {
+      console.error('Ошибка загрузки настроек:', error.message);
+      return;
     }
-  }
 
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    await saveSettingsForm(supabaseClient, user.id);
-  });
+    if (firstNameInput) {
+      firstNameInput.value = profile?.full_name ?? '';
+    }
+
+    if (lastNameInput) {
+      lastNameInput.value = profile?.last_name ?? '';
+    }
+
+    if (emailInput) {
+      emailInput.value = user.email ?? '';
+    }
+
+    if (birthDateInput && profile?.birth_date) {
+      birthDateInput.value = formatDateForInput(profile.birth_date);
+    }
+
+    if (profile?.gender) {
+      const genderRadio = form.querySelector(
+        `input[name="gender"][value="${profile.gender}"]`
+      );
+
+      if (genderRadio) {
+        genderRadio.checked = true;
+      }
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      await saveSettingsForm(supabaseClient, user.id);
+    });
+  } catch (error) {
+    console.error('Ошибка initSettingsForm:', error);
+  }
 }
 
 async function saveSettingsForm(supabaseClient, userId) {
@@ -796,14 +787,6 @@ async function saveSettingsForm(supabaseClient, userId) {
         gender: gender
       })
       .eq('id', userId);
-
-    setCachedProfile(userId, {
-      ...(getCachedProfile(userId) || {}),
-      full_name: fullName,
-      last_name: lastName,
-      birth_date: normalizedBirthDate,
-      gender: gender
-    });
 
     if (profileError) {
       console.error('Ошибка сохранения профиля:', profileError.message);
