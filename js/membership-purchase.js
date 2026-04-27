@@ -4,16 +4,6 @@
   const category = params.get('category') || 'month-1';
   const index = Number(params.get('index') || 0);
 
-  function withTimeout(promise, ms = 8000, fallback = null) {
-    let timeoutId;
-
-    const timeout = new Promise((resolve) => {
-      timeoutId = setTimeout(() => resolve(fallback), ms);
-    });
-
-    return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
-  }
-
   function stripHtml(value) {
     const html = String(value || '')
       .replace(/<br\s*\/?>/gi, ' ');
@@ -174,12 +164,7 @@
         createdAt: new Date().toISOString(),
         status: 'Успешно'
       };
-      const sessionResult = await withTimeout(
-        supabaseClient.auth.getSession(),
-        5000,
-        { data: { session: null } }
-      );
-      const user = sessionResult?.data?.session?.user || null;
+      const { data: { user } } = await supabaseClient.auth.getUser();
 
       if (!user) {
         alert('Войдите в аккаунт, чтобы оформить заказ');

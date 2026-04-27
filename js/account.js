@@ -1,5 +1,5 @@
-const SUPABASE_URL = 'https://tphqdjeordubhobwoouo.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwaHFkamVvcmR1YmhvYndvb3VvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3NzI2OTcsImV4cCI6MjA5MjM0ODY5N30.yAGVQnL4g5Eqex0PEJm3fGtoqyYaf3eA070FaelF2Hw';
+const ACCOUNT_SUPABASE_URL = 'https://tphqdjeordubhobwoouo.supabase.co';
+const ACCOUNT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwaHFkamVvcmR1YmhvYndvb3VvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3NzI2OTcsImV4cCI6MjA5MjM0ODY5N30.yAGVQnL4g5Eqex0PEJm3fGtoqyYaf3eA070FaelF2Hw';
 
 document.addEventListener('DOMContentLoaded', async () => {
   initTabs();
@@ -16,24 +16,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.location.href = 'index.html';
     return;
   }
-
-  // Сначала включаем интерфейс, который не должен ждать долгие запросы.
+  await initAvatar(supabaseClient, user);
   initAvatarUpload(supabaseClient, user);
+  await initAccountProfile(supabaseClient, user);
+  await initSettingsForm(supabaseClient, user);
+  await initMembershipInfo(supabaseClient, user);
+
   initEditProfileButton();
   initLogout(supabaseClient);
+  await initSchedule(supabaseClient, user);
   initFormMasks();
-
-  // Профиль загружаем одним запросом и сразу используем в приветствии, аватаре и настройках.
-  const profile = await loadAccountProfile(supabaseClient, user);
-  initAvatar(profile);
-  initAccountProfile(profile, user);
-  initSettingsForm(supabaseClient, user, profile);
-
-  // Эти блоки могут догружаться отдельно и не блокировать имя пользователя.
-  Promise.allSettled([
-    initMembershipInfo(supabaseClient, user),
-    initSchedule(supabaseClient, user)
-  ]);
 });
 function showConfirmModal(message) {
   return new Promise((resolve) => {
@@ -109,51 +101,14 @@ function showToast(message, isError = false) {
 }
 
 function createSupabaseClient() {
-  if (window.supabaseClient) return window.supabaseClient;
   if (!window.supabase) return null;
 
-  window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  return window.supabase.createClient(ACCOUNT_SUPABASE_URL, ACCOUNT_SUPABASE_ANON_KEY, {
     auth: {
       persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true
+      autoRefreshToken: true
     }
   });
-
-  return window.supabaseClient;
-}
-
-function withTimeout(promise, ms = 8000, fallback = null) {
-  let timeoutId;
-
-  const timeout = new Promise((resolve) => {
-    timeoutId = setTimeout(() => resolve(fallback), ms);
-  });
-
-  return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
-}
-
-async function loadAccountProfile(supabaseClient, user) {
-  try {
-    const result = await withTimeout(
-      supabaseClient
-        .from('profiles')
-        .select('full_name, last_name, birth_date, gender, avatar_url')
-        .eq('id', user.id)
-        .maybeSingle(),
-      8000,
-      { data: null, error: new Error('profiles request timeout') }
-    );
-
-    if (result?.error) {
-      console.warn('Профиль не загрузился быстро, используем данные из auth:', result.error.message || result.error);
-    }
-
-    return result?.data || null;
-  } catch (error) {
-    console.warn('Ошибка загрузки профиля:', error);
-    return null;
-  }
 }
 function initAvatarUpload(supabaseClient, user) {
   const avatarBlock = document.getElementById('avatarBlock');
@@ -199,11 +154,20 @@ function initAvatarUpload(supabaseClient, user) {
     avatarImage.src = avatarUrl;
   });
 }
-function initAvatar(profile) {
+async function initAvatar(supabaseClient, user) {
   const avatarImage = document.getElementById('avatarImage');
-  if (!avatarImage) return;
 
-  avatarImage.src = profile?.avatar_url || '../assets/img/user-defolt.svg';
+  const { data } = await supabaseClient
+    .from('profiles')
+    .select('avatar_url')
+    .eq('id', user.id)
+    .single();
+
+  if (data?.avatar_url) {
+    avatarImage.src = data.avatar_url;
+  } else {
+    avatarImage.src = '../assets/img/user-defolt.svg'; // дефолт
+  }
 }
 async function initMembershipInfo(supabaseClient, user) {
   const membershipValueEl = document.getElementById('accountMembershipValue');
@@ -298,7 +262,7 @@ async function getAuthorizedUser(supabaseClient) {
         isResolved = true;
         subscription.unsubscribe();
         resolve(null);
-      }, 800);
+      }, 1500);
     });
   } catch (error) {
     console.error('Ошибка проверки авторизации:', error);
@@ -336,19 +300,33 @@ function initTabs() {
   switchTab(activeTab);
 }
 
-function initAccountProfile(profile, user) {
+async function initAccountProfile(supabaseClient, user) {
   const greetingNameEl = document.getElementById('accountUserName');
   const cardNameEl = document.getElementById('accountCardUserName');
 
-  const fullName = profile?.full_name?.trim() || user.user_metadata?.full_name || user.email || 'Пользователь';
-  const firstName = fullName.split(' ')[0] || fullName;
+  try {
+    const { data: profile, error } = await supabaseClient
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .maybeSingle();
 
-  if (greetingNameEl) {
-    greetingNameEl.textContent = firstName;
-  }
+    if (error) {
+      console.error('Ошибка загрузки профиля:', error.message);
+    }
 
-  if (cardNameEl) {
-    cardNameEl.textContent = firstName;
+    const fullName = profile?.full_name?.trim() || user.user_metadata?.full_name || user.email || 'Пользователь';
+    const firstName = fullName.split(' ')[0] || fullName;
+
+    if (greetingNameEl) {
+      greetingNameEl.textContent = firstName;
+    }
+
+    if (cardNameEl) {
+      cardNameEl.textContent = firstName;
+    }
+  } catch (error) {
+    console.error('Ошибка инициализации профиля:', error);
   }
 }
 
@@ -671,7 +649,7 @@ function normalizeDateValue(value) {
   return `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`;
 }
 
-function initSettingsForm(supabaseClient, user, profile = null) {
+async function initSettingsForm(supabaseClient, user) {
   const form = document.getElementById('settingsForm');
   if (!form) return;
 
@@ -680,36 +658,51 @@ function initSettingsForm(supabaseClient, user, profile = null) {
   const emailInput = document.getElementById('email');
   const birthDateInput = document.getElementById('birthDate');
 
-  if (firstNameInput) {
-    firstNameInput.value = profile?.full_name ?? '';
-  }
+  try {
+    const { data: profile, error } = await supabaseClient
+      .from('profiles')
+      .select('full_name, last_name, birth_date, gender')
+      .eq('id', user.id)
+      .maybeSingle();
 
-  if (lastNameInput) {
-    lastNameInput.value = profile?.last_name ?? '';
-  }
-
-  if (emailInput) {
-    emailInput.value = user.email ?? '';
-  }
-
-  if (birthDateInput && profile?.birth_date) {
-    birthDateInput.value = formatDateForInput(profile.birth_date);
-  }
-
-  if (profile?.gender) {
-    const genderRadio = form.querySelector(
-      `input[name="gender"][value="${profile.gender}"]`
-    );
-
-    if (genderRadio) {
-      genderRadio.checked = true;
+    if (error) {
+      console.error('Ошибка загрузки настроек:', error.message);
+      return;
     }
-  }
 
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    await saveSettingsForm(supabaseClient, user.id);
-  });
+    if (firstNameInput) {
+      firstNameInput.value = profile?.full_name ?? '';
+    }
+
+    if (lastNameInput) {
+      lastNameInput.value = profile?.last_name ?? '';
+    }
+
+    if (emailInput) {
+      emailInput.value = user.email ?? '';
+    }
+
+    if (birthDateInput && profile?.birth_date) {
+      birthDateInput.value = formatDateForInput(profile.birth_date);
+    }
+
+    if (profile?.gender) {
+      const genderRadio = form.querySelector(
+        `input[name="gender"][value="${profile.gender}"]`
+      );
+
+      if (genderRadio) {
+        genderRadio.checked = true;
+      }
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      await saveSettingsForm(supabaseClient, user.id);
+    });
+  } catch (error) {
+    console.error('Ошибка initSettingsForm:', error);
+  }
 }
 
 async function saveSettingsForm(supabaseClient, userId) {
