@@ -16,6 +16,32 @@ const filtersToggleText = document.querySelector('[data-filters-toggle-text]');
 
 const WEEK_DAYS = ['ВС', 'ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ'];
 
+function withTimeout(promise, ms = 8000, fallback = null) {
+  let timeoutId;
+
+  const timeout = new Promise((resolve) => {
+    timeoutId = setTimeout(() => resolve(fallback), ms);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
+}
+
+async function getCurrentUserFast() {
+  try {
+    const sessionResult = await withTimeout(
+      supabaseClient.auth.getSession(),
+      5000,
+      { data: { session: null }, error: new Error('auth session timeout') }
+    );
+
+    return sessionResult?.data?.session?.user || null;
+  } catch (error) {
+    console.warn('Пользователь не загрузился быстро:', error);
+    return null;
+  }
+}
+
+
 function showToast(message = 'Готово') {
   const toast = document.createElement('div');
 
@@ -419,7 +445,22 @@ function showNoMembershipModal() {
 }
 
 async function bookClass(classId) {
-  const { data: { user } } = await supabaseClient.auth.getUser();
+  const clickedButtons = document.querySelectorAll(`[data-book-class="${classId}"]`);
+  clickedButtons.forEach((button) => {
+    button.disabled = true;
+    button.dataset.originalText = button.textContent;
+    button.textContent = 'Проверяем...';
+  });
+
+  const resetButtons = () => {
+    clickedButtons.forEach((button) => {
+      button.disabled = false;
+      if (button.dataset.originalText) button.textContent = button.dataset.originalText;
+      delete button.dataset.originalText;
+    });
+  };
+
+  const user = await getCurrentUserFast();
 
   if (!user) {
     if (window.openAuthModalGlobal) {
@@ -427,6 +468,7 @@ async function bookClass(classId) {
     } else {
       alert('Войдите в аккаунт, чтобы записаться на тренировку');
     }
+    resetButtons();
     return;
   }
 
@@ -435,6 +477,7 @@ async function bookClass(classId) {
 
   if (!hasMembership) {
     showNoMembershipModal();
+    resetButtons();
     return;
   }
 
@@ -443,6 +486,7 @@ async function bookClass(classId) {
 
   if (isClassFull(classItem)) {
     alert('На это занятие уже нет свободных мест');
+    resetButtons();
     return;
   }
 
@@ -457,6 +501,7 @@ async function bookClass(classId) {
       console.error(error);
       alert('Не удалось записаться. Попробуйте позже');
     }
+    resetButtons();
     return;
   }
 
@@ -491,21 +536,6 @@ async function loadClasses() {
   scheduleState.allClasses = data || [];
   scheduleState.filteredClasses = [...scheduleState.allClasses];
 
-  const { data: { user } } = await supabaseClient.auth.getUser();
-  await Promise.all([
-    loadUserBookings(user),
-    loadBookingCounts(scheduleState.allClasses.map((item) => item.id)),
-  ]);
-
-  const params = new URLSearchParams(window.location.search);
-  const classFromUrl = Number(params.get('class'));
-
-  if (classFromUrl && user) {
-    await bookClass(classFromUrl);
-    window.history.replaceState({}, '', 'schedule.html');
-    return;
-  }
-
   fillCustomDropdowns();
 
   const selectedDayWithClasses = weekDates.find((date) => {
@@ -519,9 +549,28 @@ async function loadClasses() {
 
   scheduleState.selectedClassId = null;
 
+  // Расписание показываем сразу после classes, не ждём auth, class_bookings и подсчёт мест.
   renderDays();
   renderList();
   renderDetail();
+
+  const user = await getCurrentUserFast();
+  const params = new URLSearchParams(window.location.search);
+  const classFromUrl = Number(params.get('class'));
+
+  if (classFromUrl && user) {
+    await bookClass(classFromUrl);
+    window.history.replaceState({}, '', 'schedule.html');
+    return;
+  }
+
+  Promise.allSettled([
+    loadUserBookings(user),
+    loadBookingCounts(scheduleState.allClasses.map((item) => item.id)),
+  ]).then(() => {
+    renderList();
+    renderDetail();
+  });
 }
 
 filtersToggle?.addEventListener('click', () => {

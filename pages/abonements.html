@@ -12,6 +12,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/supabase-client.js"></script>
     <script src="../js/auth.js" defer></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
@@ -422,10 +423,21 @@
     const SUPABASE_URL = 'https://tphqdjeordubhobwoouo.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwaHFkamVvcmR1YmhvYndvb3VvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3NzI2OTcsImV4cCI6MjA5MjM0ODY5N30.yAGVQnL4g5Eqex0PEJm3fGtoqyYaf3eA070FaelF2Hw';
 
-    const supabaseClient = window.supabase.createClient(
+    const supabaseClient = window.supabaseClient || window.supabase.createClient(
         SUPABASE_URL,
         SUPABASE_ANON_KEY
     );
+    window.supabaseClient = supabaseClient;
+
+    function withTimeout(promise, ms = 8000, fallback = null) {
+        let timeoutId;
+
+        const timeout = new Promise((resolve) => {
+            timeoutId = setTimeout(() => resolve(fallback), ms);
+        });
+
+        return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
+    }
 </script>
 <script>
     const tabs = document.querySelectorAll('.account-tab');
@@ -575,7 +587,11 @@
 
         event.preventDefault();
 
-        const { data } = await supabaseClient.auth.getSession();
+        const { data } = await withTimeout(
+            supabaseClient.auth.getSession(),
+            5000,
+            { data: { session: null } }
+        );
 
         if (!data.session) {
             localStorage.setItem('pendingMembershipUrl', href);
@@ -585,12 +601,19 @@
 
         const user = data.session.user;
 
-        const { data: activeMembership, error } = await supabaseClient
-            .from('membership_orders')
-            .select('id')
-            .eq('user_id', user.id)
-            .eq('status', 'Успешно')
-            .limit(1);
+        const membershipResult = await withTimeout(
+            supabaseClient
+                .from('membership_orders')
+                .select('id')
+                .eq('user_id', user.id)
+                .eq('status', 'Успешно')
+                .limit(1),
+            8000,
+            { data: [], error: new Error('membership check timeout') }
+        );
+
+        const activeMembership = membershipResult?.data || [];
+        const error = membershipResult?.error;
 
         if (error) {
             console.error(error);
